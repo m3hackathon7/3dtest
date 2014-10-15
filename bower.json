@@ -12,6 +12,12 @@
     "tests"
   ],
   "dependencies": {
-    "threejs-build": "*"
+    "threejs-build": "*",
+    "stats.js": "*"
+  },
+  "exportsOverride": {
+    "stats.js": {
+      "js": "build/*.js"
+    }
   }
 }

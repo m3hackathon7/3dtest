@@ -1,7 +1,13 @@
+var container = document.body;
 
 // Our Javascript will go here.
 var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
 camera.position.z = 2;
+// fpsステータス表示
+var stats = new Stats();
+stats.domElement.style.position = 'absolute';
+stats.domElement.style.top = '0px';
+container.appendChild( stats.domElement );
 
 var scene = new THREE.Scene();
 
