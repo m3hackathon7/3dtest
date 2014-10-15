@@ -6,10 +6,11 @@ module.exports = function (grunt) {
 
   // Configurable paths for the application
   var appConfig = {
-    app: './',
-    appjs: './js',
-    appcss: './css',
-    apphtml: './',
+    app: './app',
+    appjs: './app/js',
+    appcss: './app/css',
+    apphtml: './app',
+    appimage: './app/images',
     test: 'test/js'
   };
 
@@ -20,7 +21,7 @@ module.exports = function (grunt) {
     bower: {
       install: {
         options: {
-          targetDir: '<%= appConfig.appjs %>/vendor',
+          targetDir: '<%= appConfig.app %>/vendor',
           layout: 'byComponent',
           install: true,
           verbose: false,
@@ -31,20 +32,20 @@ module.exports = function (grunt) {
     },
 
     watch: {
-      js: {
-        files: ['<%= appConfig.appjs %>/{,*/}*.js'],
-        tasks: ['newer:jshint:all'],
-        options: {
-          livereload: '<%= connect.options.livereload %>'
-        }
-      },
-      jsTest: {
-        files: [
-          '<%= appConfig.test %>/spec/{,*/}*.js',
-          '<%= appConfig.appjs %>/{,*/}*.js'
-        ],
-        tasks: ['newer:jshint:test', 'karma']
-      },
+      //js: {
+      //  files: ['<%= appConfig.appjs %>/{,*/}*.js'],
+      //  tasks: ['newer:jshint:all'],
+      //  options: {
+      //    livereload: '<%= connect.options.livereload %>'
+      //  }
+      //},
+      //jsTest: {
+      //  files: [
+      //    '<%= appConfig.test %>/spec/{,*/}*.js',
+      //    '<%= appConfig.appjs %>/{,*/}*.js'
+      //  ],
+      //  tasks: ['newer:jshint:test', 'karma']
+      //},
       gruntfile: {
         files: ['Gruntfile.js']
       },
@@ -54,9 +55,10 @@ module.exports = function (grunt) {
         },
         files: [
           '<%= appConfig.test %>/{,*/}*.html',
-          '<%= appConfig.apphtml %>/{,*/}{,*/}*.html.ssp',
+          '<%= appConfig.apphtml %>/{,*/}{,*/}*.html',
           '<%= appConfig.appjs %>/{,*/}*.js',
-          '<%= appConfig.appcss %>/{,*/}*.css'
+          '<%= appConfig.appcss %>/{,*/}*.css',
+          '<%= appConfig.appimage %>/{,*/}*.png'
         ]
       }
     },
@@ -70,6 +72,12 @@ module.exports = function (grunt) {
       },
       livereload: {
         options: {
+          middleware: function (connect) {
+            return [
+              connect().use(connect.query()),
+              connect.static(appConfig.app)
+            ];
+          }
         }
       },
       test: {
