@@ -39,6 +39,7 @@ directionalLight.position.set(1, 1, 1).normalize();
 scene.add(directionalLight);
 
 
+var prevPosition = {};
 var mousedown = false;
 renderer.domElement.addEventListener('mousedown', function(e){
   mousedown = true;
@@ -47,12 +48,13 @@ renderer.domElement.addEventListener('mousedown', function(e){
 
 renderer.domElement.addEventListener('mousemove', function(e){
   if(!mousedown) return;
-  moveDistance = {x: prevPosition.x - e.pageX, y: prevPosition.y - e.pageY};
-  mesh.rotation.x += moveDistance.y * 0.01;
-  mesh.rotation.y -= moveDistance.x * 0.01;
+  var moveDistance = {x: prevPosition.x - e.pageX, y: prevPosition.y - e.pageY};
+
+  cube.rotation.x += moveDistance.y * 0.01;
+  cube.rotation.y -= moveDistance.x * 0.01;
 
   prevPosition = {x: e.pageX, y: e.pageY};
-  render();
+  //render();
 }, false);
 
 renderer.domElement.addEventListener('mouseup', function(e){
