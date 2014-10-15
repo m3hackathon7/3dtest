@@ -25,3 +25,8 @@
 ```
   * threejsを使うなら、threejsではなく、threejs-buildをつかうとよいっぽい
 
+
+* カメラ操作の参考
+  * http://mrdoob.com/projects/voxels/
+  * http://stackoverflow.com/questions/8426822/rotate-camera-in-three-js-with-mouse
+  * http://alteredqualia.com/three/examples/webgl_terrain_dynamic.html
