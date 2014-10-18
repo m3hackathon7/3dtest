@@ -85,6 +85,35 @@ function setupObjects(scene) {
       var line = new THREE.Line( geometry, material );
       line.type = THREE.LinePieces;
       return line;
+    },
+    function() {
+      var width = 1024, height = 1024;
+      var data = new Uint8Array( width * height ),
+      size = width * height, quality = 2, z = Math.random() * 100;
+
+      for ( var j = 0; j < 4; j ++ ) {
+        quality *= 4;
+        for ( var i = 0; i < size; i ++ ) {
+          var x = i % width, y = ~~ ( i / width );
+          data[ i ] += Math.abs( Math.random() * 50);
+        }
+      }
+
+      var material = new THREE.MeshPhongMaterial( {  color: 0x00FF7F, ambient:0x993030 } );
+
+      var quality = 64, step = width / quality;
+
+      var geometry = new THREE.PlaneGeometry( 2000, 2000, quality - 1, quality - 1 );
+      geometry.applyMatrix( new THREE.Matrix4().makeRotationX( - Math.PI / 2 ) );
+
+      for ( var i = 0, l = geometry.vertices.length; i < l; i ++ ) {
+        var x = i % quality, y = Math.floor( i / quality );
+        geometry.vertices[ i ].y = data[ ( x * step ) + ( y * step ) * height ] * 2;
+      }
+
+      geometry.computeFaceNormals();
+      geometry.computeVertexNormals();
+      return new THREE.Mesh( geometry, material );
     }
   ];
 

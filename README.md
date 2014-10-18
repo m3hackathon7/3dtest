@@ -30,3 +30,6 @@
   * http://mrdoob.com/projects/voxels/
   * http://stackoverflow.com/questions/8426822/rotate-camera-in-three-js-with-mouse
   * http://alteredqualia.com/three/examples/webgl_terrain_dynamic.html
+
+* 地形の作り方
+  * http://yomotsu.net/blog/2012/12/01/create-terrain-with-threejs.html
