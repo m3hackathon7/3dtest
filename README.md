@@ -33,3 +33,7 @@
 
 * 地形の作り方
   * http://yomotsu.net/blog/2012/12/01/create-terrain-with-threejs.html
+
+* 緯度経度のメートル変換
+  * http://mononofu.hatenablog.com/entry/20090324/1237894846
+

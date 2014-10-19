@@ -9,6 +9,16 @@ function rad(degree) {
   return degree * Math.PI / 180;
 }
 
+var DEGREE_TO_METER = 6378150 * 2 * Math.PI / 360;
+
+// 経度・経度からメートルに変換
+function coordToMeter(latitude, longitude) {
+  return {
+    x: DEGREE_TO_METER * Math.cos( rad(latitude) ) * longitude,
+    y: DEGREE_TO_METER * latitude
+  };
+}
+
 // -------------------------
 
 
@@ -125,116 +135,224 @@ function Resources() {
 }
 
 
-// メインシーン
-function MainScene(input) {
+/**
+ * 地形ビューア
+ *
+ * @param container 表示対象箇所のDOMエレメント
+ */
+function TerrainViewer(container) {
+  // 地形の地図画像とサイズを指定
+  this.terrain = { image: null, width: 0, height: 0 };
+  this.setTerrain = function(image, width, height) {
+    this.terrain.image = image;
+    this.terrain.width = width;
+    this.terrain.height = height;
+  };
+
+  // 地形の中心点座標
+  this.terrain.center = {latitude: 0, longitude: 0};
+  this.setCenter = function(lat, lon) {
+    this.terrain.center.latitude = lat;
+    this.terrain.center.longitude = lon;
+
+    var meter = coordToMeter(lat, lon);
+    this.terrain.center.x = meter.x;
+    this.terrain.center.y = meter.y;
+  };
+
+  // 地形の座標
+  this.terrain.coordGrid = [];
+  this.setCoordGrid = function(coordGrid, width, height) {
+    this.terrain.coordGrid = coordGrid;
+    this.terrain.coordGridWidth = width;
+    this.terrain.coordGridHeight = height;
+  };
+
+  // 地図座標系と描画座標系の変換晩率
+  this.convertRate = 1.0;
+  this.setConvertRate = function(rate) {
+    this.convertRate = rate;
+  };
+
+  // 経路パス
+  this.route = [];
+  this.setRoute = function(route) {
+    this.route = route;
+  };
+
+  // 中心点からの相対位置をメートルで取得
+  this.relativeFromCenter = function(lat, log) {
+    var meter = coordToMeter(lat, log);
+    return {
+      x: meter.x - this.terrain.center.x,
+      y: meter.y - this.terrain.center.y
+    };
+  };
+
+
+  var self = this;
   var $r = new Resources();
-  this.$r = $r;
+  var input = new Input(container);
 
-  $r.register('l:ambient', new THREE.AmbientLight( 0x606060 ));
-  $r.register('l:directional', new THREE.DirectionalLight(0xffffff));
+  this.setup = function() {
+    this.initResources();
+    this.draw();
+  };
 
-  $r.register('g:box', new THREE.BoxGeometry(100, 100,100));
-  $r.register('m:blue', new THREE.MeshBasicMaterial({color: 0x00ff00}));
-  $r.register('m:shine',
-    new THREE.MeshPhongMaterial({
-      // light
-      specular: '#a9fcff',
-      // intermediate
-      color: '#00abb1',
-      // dark
-      emissive: '#006063',
-      shininess: 100
-    })
-  );
+  this.initResources = function () {
 
-  $r.register('t:texture', new THREE.ImageUtils.loadTexture('/images/texture.jpg'));
-  $r.register('m:texture',
-    new THREE.MeshLambertMaterial({map: $r.get('t:texture')})
-  );
+    $r.register('l:ambient', new THREE.AmbientLight( 0x606060 ));
+    $r.register('l:directional', new THREE.DirectionalLight(0xffffff));
 
-  $r.register('o:cube', function() {
-    new THREE.Mesh( $r.get('g:box'), $r.get('m:texture') );
-  });
+    $r.register('g:grid', function () {
+      var size = 5000, step = 250;
+      var geometry = new THREE.Geometry();
+      for ( var i = - size; i <= size; i += step ) {
+        geometry.vertices.push( new THREE.Vector3( - size, 0, i ) );
+        geometry.vertices.push( new THREE.Vector3(   size, 0, i ) );
 
-  $r.register('g:grid', function () {
-    var size = 500, step = 50;
-    var geometry = new THREE.Geometry();
-    for ( var i = - size; i <= size; i += step ) {
-      geometry.vertices.push( new THREE.Vector3( - size, 0, i ) );
-      geometry.vertices.push( new THREE.Vector3(   size, 0, i ) );
-
-      geometry.vertices.push( new THREE.Vector3( i, 0, - size ) );
-      geometry.vertices.push( new THREE.Vector3( i, 0,   size ) );
-    }
-    return geometry;
-  });
-
-
-  $r.register('m:lightGray',
-    new THREE.LineBasicMaterial({ color: 0x000000, opacity: 0.2, transparent: true }));
-
-  $r.register('o:basePlane', function() {
-    var line = new THREE.Line($r.get('g:grid'), $r.get('m:lightGray'));
-    line.type = THREE.LinePieces;
-    return line;
-  });
-
-
-  $r.register('m:green',
-    new THREE.MeshPhongMaterial({ color: 0x00FF7F, ambient:0x993030 }));
-
-  $r.register('g:ground', function() {
-    var width = 1024, height = 1024;
-    var data = new Uint8Array( width * height ),
-    size = width * height, quality = 2, z = Math.random() * 100;
-
-    for ( var j = 0; j < 4; j ++ ) {
-      quality *= 4;
-      for ( var i = 0; i < size; i ++ ) {
-        var x = i % width, y = ~~ ( i / width );
-        data[ i ] += Math.abs( Math.random() * 50);
+        geometry.vertices.push( new THREE.Vector3( i, 0, - size ) );
+        geometry.vertices.push( new THREE.Vector3( i, 0,   size ) );
       }
+      return geometry;
+    });
+
+    $r.register('m:lightGray',
+      new THREE.LineBasicMaterial({ color: 0x000000, opacity: 0.2, transparent: true }));
+
+    $r.register('o:basePlane', function() {
+      var line = new THREE.Line($r.get('g:grid'), $r.get('m:lightGray'));
+      line.type = THREE.LinePieces;
+      return line;
+    });
+
+
+    $r.register('t:map', function() {
+      return new THREE.ImageUtils.loadTexture(self.terrain.image);
+    });
+
+    $r.register('m:map',
+      new THREE.MeshLambertMaterial({map: $r.get('t:map')})
+    );
+
+    $r.register('g:terrain', function() {
+      var tr = self.terrain;
+
+      var geometry = new THREE.PlaneGeometry(
+          tr.width, tr.height, tr.coordGridWidth - 1, tr.coordGridHeight - 1 );
+      geometry.applyMatrix( new THREE.Matrix4().makeRotationX( - Math.PI / 2 ) );
+
+      for ( var i = 0, l = geometry.vertices.length; i < l; i ++ ) {
+        geometry.vertices[ i ].y = tr.coordGrid[ i ];
+      }
+
+      geometry.computeFaceNormals();
+      geometry.computeVertexNormals();
+      return geometry;
+    });
+
+    $r.register('o:ground', function() {
+      return new THREE.Mesh($r.get('g:terrain'), $r.get('m:map'))
+    });
+
+
+    $r.register('c:camera', function() {
+      var camera = new THREE.PerspectiveCamera( 45,
+       window.innerWidth / window.innerHeight,
+       1, 10000 );
+      camera.position.y = 200;
+      return camera;
+    });
+
+
+    $r.register('g:route', function() {
+      var geometry = new THREE.Geometry();
+      var colors = [];
+      for (var i = 0, l = self.route.length; i < l; i++) {
+        var point = self.route[i];
+        var pos = self.relativeFromCenter(point.lat, point.lon);
+        geometry.vertices[ i ] =
+          new THREE.Vector3( pos.x, point.elev, pos.y );
+
+        colors[i] = new THREE.Color( 0xffffff );
+        colors[i].setHSL( 0.6, 1.0, i / l * 0.5 + 0.5 );
+      }
+      geometry.colors = colors;
+      return geometry;
+    });
+
+    $r.register('m:route', function() {
+      return new THREE.LineBasicMaterial({
+        color: 0xffffff, opacity: 1, linewidth: 3,
+        vertexColors: THREE.VertexColors
+      });
+    });
+
+    $r.register('o:route', function() {
+      return new THREE.Line($r.get('g:route'), $r.get('m:route') );
+    });
+  }
+
+  // メインシーン
+  this.createScene = function() {
+
+    var scene = new THREE.Scene();
+
+    scene.add($r.get('l:ambient'));
+
+    var directionalLight = $r.get('l:directional');
+    directionalLight.position.set(1, 1, 1).normalize();
+    scene.add(directionalLight);
+
+    scene.add($r.get('o:basePlane'));
+    scene.add($r.get('o:ground'));
+
+    scene.add($r.get('o:route'));
+
+    return scene;
+  }
+
+
+  // 描画メイン
+  this.draw = function () {
+    // fpsステータス表示
+    var stats = new Stats();
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.top = '0px';
+    container.appendChild( stats.domElement );
+
+    // レンダラ
+    var renderer = new THREE.WebGLRenderer();
+    renderer.setClearColor( 0xf0f0f0 );
+    renderer.setSize( container.offsetWidth, container.offsetHeight );
+    console.log(container.offsetWidth, container.offsetHeight );
+    container.appendChild( renderer.domElement );
+
+    var scene = this.createScene();
+
+    // レンダリングループ
+    var self = this;
+    function render(renderer, scene) {
+      requestAnimationFrame(function() {
+        render(renderer, scene);
+      });
+
+      update(scene);
+
+      renderer.render(scene, self.getCamera());
+      stats.update();
     }
 
-    var quality = 64, step = width / quality;
+    render(renderer, scene);
 
-    var geometry = new THREE.PlaneGeometry( 2000, 2000, quality - 1, quality - 1 );
-    geometry.applyMatrix( new THREE.Matrix4().makeRotationX( - Math.PI / 2 ) );
-
-    for ( var i = 0, l = geometry.vertices.length; i < l; i ++ ) {
-      var x = i % quality, y = Math.floor( i / quality );
-      geometry.vertices[ i ].y = data[ ( x * step ) + ( y * step ) * height ] * 2;
-    }
-
-    geometry.computeFaceNormals();
-    geometry.computeVertexNormals();
-    return geometry;
-  });
-
-  $r.register('o:ground', function() {
-    return new THREE.Mesh($r.get('g:ground'), $r.get('m:green'))
-  });
-
-
-  $r.register('c:camera', function() {
-    var camera = new THREE.PerspectiveCamera( 45,
-     window.innerWidth / window.innerHeight,
-     1, 10000 );
-    camera.position.y = 200;
-    return camera;
-  });
-
-
-  this.scene = new THREE.Scene();
-
-  this.scene.add($r.get('l:ambient'));
-
-  var directionalLight = $r.get('l:directional');
-  directionalLight.position.set(1, 1, 1).normalize();
-  this.scene.add(directionalLight);
-
-  this.scene.add($r.get('o:basePlane'));
-  this.scene.add($r.get('o:ground'));
+    // 画面リサイズ対応
+    container.addEventListener('resize', function () {
+        var camera = this.getCamera();
+        camera.aspect = container.offsetWidth / container.offsetHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize( container.offsetWidth, container.offsetHeight );
+      }, false );
+  }
 
 
   this.getCamera = function() {
@@ -242,12 +360,11 @@ function MainScene(input) {
   };
 
 
-  var angle = {theta: 45, phi: 60};
+  var angle = {theta: 25, phi: 15};
   var radious = 1600;
   var mouseDown = {};
 
-  this.update = function() {
-
+  function update(scene) {
     if (input.isMousePress()) {
       mouseDown.angle = _.clone(angle);
       mouseDown.radious = radious;
@@ -274,95 +391,12 @@ function MainScene(input) {
     camera.position.multiplyScalar(radious);
 
     camera.updateMatrix();
-    camera.lookAt( this.scene.position );
+    camera.lookAt( scene.position );
 
     input.update();
   };
 }
 
-/**
- * 地形ビューア
- *
- * @param container 表示対象箇所のDOMエレメント
- */
-function TerrainViewer(container) {
-
-  // fpsステータス表示
-  var stats = new Stats();
-  stats.domElement.style.position = 'absolute';
-  stats.domElement.style.top = '0px';
-  container.appendChild( stats.domElement );
-
-  // レンダリングループ
-  function render(renderer, scene) {
-    requestAnimationFrame(function() {
-      render(renderer, scene);
-    });
-
-    scene.update();
-
-    renderer.render(scene.scene, scene.getCamera());
-    stats.update();
-  }
-
-  // 描画メイン
-  this.draw = function() {
-    // レンダラ
-    var renderer = new THREE.WebGLRenderer();
-    renderer.setClearColor( 0xf0f0f0 );
-    renderer.setSize( container.offsetWidth, container.offsetHeight );
-    console.log(container.offsetWidth, container.offsetHeight );
-    container.appendChild( renderer.domElement );
-
-    var input = new Input(container);
-    var scene = new MainScene(input);
-    render(renderer, scene);
-
-    // 画面リサイズ対応
-    container.addEventListener('resize', function () {
-        var camera = this.getCamera();
-        camera.aspect = container.offsetWidth / container.offsetHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize( container.offsetWidth, container.offsetHeight );
-      }, false );
-  };
-
-
-  // 地形の地図画像とサイズを指定
-  this.terrain = { image: null, width: 0, height: 0 };
-  this.setTerrain = function(image, width, height) {
-    this.terrain.image = image;
-    this.terrain.width = width;
-    this.terrain.height = height;
-  };
-
-  // 地形の中心点座標
-  this.terrain.center = {latitude: 0, longitude: 0};
-  this.setCenter = function(lat, lon) {
-    this.terrain.center.latitude = lat;
-    this.terrain.center.longitude = lon;
-  };
-
-  // 地図座標系と描画座標系の変換晩率
-  this.convertRate = 1.0;
-  this.setConvertRate = function(rate) {
-    this.convertRate = rate;
-  };
-
-  // 地形の座標
-  this.terrain.coordGrid = [];
-  this.terrain.setCoordGrid = function(coordGrid, width, height) {
-    this.terrain.coordGrid = coordGrid;
-    this.terrain.coordWidth = width;
-    this.terrain.coordHeight = height;
-  };
-
-  // 経路パス
-  this.route = [];
-  this.setRoute = function(route) {
-    this.route = route;
-  };
-}
 
 window.TerrainViewer = TerrainViewer;
 })();

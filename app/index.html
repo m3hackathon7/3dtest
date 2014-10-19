@@ -8,9 +8,34 @@
 		<script src="vendor/threejs-build/three.min.js"></script>
 		<script src="vendor/stats.js/js/stats.min.js"></script>
 		<script src="vendor/underscore/underscore.js"></script>
-		<script src="js/app.js"></script>
+		<script src="js/TerrainViewer.js"></script>
 		<script>
-      new TerrainViewer(document.getElementById('container'));
+      var container = document.getElementById('container');
+
+      var tv = new TerrainViewer(container);
+      tv.setTerrain(
+        '/images/texture.jpg', 2000, 2000);
+      tv.setCoordGrid([
+        0, 0, 10, 10, 10, 10, 10, 10, 10, 0,
+        0, 0, 10, 10, 10, 20, 20, 10, 10, 0,
+        0, 0, 10, 10, 20, 20, 20, 10, 10, 0,
+        0, 0, 10, 20, 30, 30, 20, 10, 10, 0,
+        0, 0, 10, 20, 30, 30, 20, 10, 10, 0,
+        0, 0, 10, 20, 30, 30, 30, 20, 10, 0,
+        0, 0, 10, 20, 20, 20, 30, 20, 10, 0,
+        0, 0, 10, 20, 10, 20, 20, 10, 10, 0,
+        0, 0, 10, 10, 10, 20, 20, 10, 10, 0,
+        0, 0, 10, 10, 10, 20, 20, 10, 10, 0
+        ], 10, 10);
+      tv.setCenter(35.392626649, 139.241986328);
+      tv.setRoute([
+        {lat: 35.392626649, lon: 139.241986328, elev: 40},
+        {lat: 35.393626649, lon: 139.241986328, elev: 50},
+        {lat: 35.400626649, lon: 139.252986328, elev: 60},
+        {lat: 35.403626649, lon: 139.263986328, elev: 30}
+      ]);
+
+      tv.setup();
     </script>
 	</body>
 </html>
